@@ -1,0 +1,35 @@
+{
+  "name": "seesee",
+  "version": "0.1.0",
+  "private": true,
+  "devDependencies": {
+    "babel-cli": "^6.22.2",
+    "babel-preset-es2015": "^6.18.0",
+    "babel-watch": "^2.0.5",
+    "react-scripts": "0.8.4"
+  },
+  "dependencies": {
+    "app-module-path": "^2.2.0",
+    "babel": "^6.5.2",
+    "body-parser": "^1.15.2",
+    "cookie-parser": "^1.4.3",
+    "csprng": "^0.1.1",
+    "express": "^4.14.0",
+    "express-session": "^1.15.0",
+    "feedparser-promised": "^1.1.1",
+    "lodash": "^4.17.4",
+    "method-override": "^2.3.7",
+    "mongoose": "^4.7.6",
+    "morgan": "^1.7.0",
+    "node-alidayu-sms": "^1.0.1",
+    "react": "^15.4.1",
+    "react-dom": "^15.4.1",
+    "utility": "^1.9.0"
+  },
+  "scripts": {
+    "start": "babel-watch server",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}
