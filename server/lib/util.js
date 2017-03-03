@@ -1,5 +1,7 @@
 import alidayuSMS from 'node-alidayu-sms'
 import { alidayuCfg } from '../config'
+import utils from 'utility'
+import rand from 'csprng'
 
 const validMobile = mobile => {
   const re = /^(1(3|4|5|7|8))\d{9}$/
@@ -38,9 +40,16 @@ const randomCode = digitCount => {
   return result
 }
 
+const generateToken = mobile => {
+  const randomPart = rand(160, 36)
+  const accountPart = utils.sha1(mobile, 'base64')
+  return `${accountPart}.${randomPart}`
+}
+
 export {
   validMobile,
   formatedUserInfo,
   sms,
-  randomCode
+  randomCode,
+  generateToken,
 }

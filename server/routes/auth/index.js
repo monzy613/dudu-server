@@ -8,7 +8,8 @@ import {
   validMobile,
   formatedUserInfo,
   sms,
-  randomCode
+  randomCode,
+  generateToken,
 } from '../../lib/util'
 import db from '../../lib/db'
 import model from '../../model'
@@ -44,7 +45,7 @@ router.post('/login', (req, res) => {
     if (isEmpty(docs)) {
       res.send({ error: `${mobile} 不存在` })
     } else {
-      const user = docs[0]
+      const [user] = docs
       const {
         salt,
         pwdHash
@@ -52,8 +53,18 @@ router.post('/login', (req, res) => {
 
       const clientPwdHash = utils.sha1(`${password}${salt}`, 'base64')
       if (clientPwdHash === pwdHash) {
-        // success
-        res.send({ result: formatedUserInfo(user) })
+        // 生成 token, 存入user表
+        const userWithToken = formatedUserInfo(user)
+        const token = generateToken(user.mobile)
+        userWithToken.token = token
+        model.user.findOneAndUpdate({ mobile: user.mobile }, userWithToken)
+        .then(doc => {
+          res.send({ result: userWithToken })
+        })
+        .catch(error => {
+          console.warn(error)
+          res.send({ error })
+        })
       } else {
         // wrong password
         res.send({ error: '密码错误' })
@@ -154,8 +165,7 @@ router.post('/resetPassword', (req, res) => {
 
 // verify
 router.post('/verify', (req, res) => {
-  const { mobile } = req.session
-  const { number, type } = req.body
+  const { mobile, number, type } = req.body
   if (isEmpty(mobile)) {
     res.send({ error: '手机号错误' })
     return
@@ -167,20 +177,24 @@ router.post('/verify', (req, res) => {
       // empty
       res.send({ error: '验证码已过期' })
     } else {
-      const verify = docs[0]
+      const [verify] = docs
       if (verify.number === number) {
         // success
-        if (type === VERIFY_TYPE_REGISTER) {
+        if (type !== VERIFY_TYPE_PASSWORD) {
+          // 注册
           model.user.find({ mobile })
           .then(docs => {
             if (!isEmpty(docs)) {
               res.send({ error: '手机号已被注册' })
             } else {
               const { pwdHash, salt, isDefaultAvatar, name } = verify.userInfo
-              const user = new model.user({ mobile, pwdHash, salt, isDefaultAvatar, name })
-              user.save()
-              .then(doc => {
-                model.verify.find({ mobile }).remove(() => res.send({ result: doc }))
+              const token = generateToken(mobile)
+              const user = new model.user({ mobile, pwdHash, salt, isDefaultAvatar, name, token })
+
+              user.save().then(user => {
+                const result = formatedUserInfo(user)
+                result.token = user.token
+                model.verify.find({ mobile }).remove(() => res.send({ result }))
               })
               .catch(error => {
                 console.warn('VERIFY ERROR: ', error)
@@ -193,7 +207,7 @@ router.post('/verify', (req, res) => {
             res.send({ error })
           })
         } else {
-
+          // 大概是忘了密码
         }
       } else {
         // failed

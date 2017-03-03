@@ -6,7 +6,8 @@ const userSchema = new Schema({
   name: String,
   isDefaultAvatar: Boolean,
   salt: String,
-  pwdHash: String
+  pwdHash: String,
+  token: String,
 })
 
 const verifySchema = new Schema({
