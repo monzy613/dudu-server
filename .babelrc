@@ -1,1 +1,1 @@
-{"presets": ["latest"]}
+{"presets": ["latest", "babel-preset-stage-3"]}

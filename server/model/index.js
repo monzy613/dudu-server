@@ -7,7 +7,6 @@ const userSchema = new Schema({
   isDefaultAvatar: Boolean,
   salt: String,
   pwdHash: String,
-  token: String,
 })
 
 const verifySchema = new Schema({
@@ -19,11 +18,24 @@ const verifySchema = new Schema({
     name: String,
     isDefaultAvatar: Boolean,
     salt: String,
-    pwdHash: String
-  }
+    pwdHash: String,
+  },
+})
+
+const tokenSchema = new Schema({
+  mobile: String,
+  token: String,
+  expireDate: Date,
+})
+
+const userSubscribeSchema = new Schema({
+  mobile: String,
+  feeds: Array,
 })
 
 export default {
   user: mongoose.model('user', userSchema),
-  verify: mongoose.model('verify', verifySchema)
+  userSubscribe: mongoose.model('userSubscribe', userSubscribeSchema),
+  token: mongoose.model('token', tokenSchema),
+  verify: mongoose.model('verify', verifySchema),
 }

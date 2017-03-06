@@ -15,6 +15,8 @@ import db from '../../lib/db'
 import model from '../../model'
 
 const router = express.Router()
+
+const tokenExpireSeconds = 60 * 60 * 24 * 7 * 1000 // token有效期一周
 const MAX_VERIFY_TIME = 600000 // 验证码十分钟有效
 const VERIFY_TYPE_REGISTER = 'register'
 const VERIFY_TYPE_PASSWORD = 'password'
@@ -53,13 +55,17 @@ router.post('/login', (req, res) => {
 
       const clientPwdHash = utils.sha1(`${password}${salt}`, 'base64')
       if (clientPwdHash === pwdHash) {
-        // 生成 token, 存入user表
-        const userWithToken = formatedUserInfo(user)
+        // 生成 token, 存入token表
         const token = generateToken(user.mobile)
-        userWithToken.token = token
-        model.user.findOneAndUpdate({ mobile: user.mobile }, userWithToken)
+        const expireDate = new Date((new Date()).getTime() + tokenExpireSeconds)
+        model.token.findOneAndUpdate({ mobile }, { token, expireDate }, { upsert: true })
         .then(doc => {
-          res.send({ result: userWithToken })
+          res.send({
+            result: {
+              user: formatedUserInfo(user),
+              token,
+            }
+          })
         })
         .catch(error => {
           console.warn(error)
@@ -189,17 +195,25 @@ router.post('/verify', (req, res) => {
             } else {
               const { pwdHash, salt, isDefaultAvatar, name } = verify.userInfo
               const token = generateToken(mobile)
-              const user = new model.user({ mobile, pwdHash, salt, isDefaultAvatar, name, token })
+              const expireDate = new Date((new Date()).getTime() + tokenExpireSeconds)
+              const user = new model.user({
+                mobile,
+                pwdHash,
+                salt,
+                isDefaultAvatar,
+                name
+              })
 
               user.save().then(user => {
-                const result = formatedUserInfo(user)
-                result.token = user.token
-                model.verify.find({ mobile }).remove(() => res.send({ result }))
+                const result = {
+                  user: formatedUserInfo(user),
+                  token
+                }
+                model.token.findOneAndUpdate({ mobile }, { token, expireDate }, { upsert: true })
+                .then(() => model.verify.find({ mobile }).remove(() => res.send({ result })))
+                .catch(error => res.send({ error }))
               })
-              .catch(error => {
-                console.warn('VERIFY ERROR: ', error)
-                res.send({ error })
-              })
+              .catch(error => res.send({ error }))
             }
           })
           .catch(error => {
@@ -208,6 +222,7 @@ router.post('/verify', (req, res) => {
           })
         } else {
           // 大概是忘了密码
+          res.send({ error: '大概是忘了密码' })
         }
       } else {
         // failed
