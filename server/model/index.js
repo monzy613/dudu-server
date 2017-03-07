@@ -28,6 +28,14 @@ const tokenSchema = new Schema({
   expireDate: Date,
 })
 
+const feedSchema = new Schema({
+  source: String,
+  title: String,
+  description: String,
+  link: String,
+  items: Array
+})
+
 const userSubscribeSchema = new Schema({
   mobile: String,
   feeds: Array,
@@ -37,5 +45,6 @@ export default {
   user: mongoose.model('user', userSchema),
   userSubscribe: mongoose.model('userSubscribe', userSubscribeSchema),
   token: mongoose.model('token', tokenSchema),
+  feed: mongoose.model('feed', feedSchema),
   verify: mongoose.model('verify', verifySchema),
 }
