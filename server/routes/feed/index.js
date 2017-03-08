@@ -9,26 +9,6 @@ import model from '../../model'
 
 const router = express.Router()
 
-const feedItemFormatter = item => {
-  const {
-    title,
-    description,
-    date,
-    pubdate,
-    pubDate,
-    link,
-    categories,
-  } = item
-  const publishDate = date || pubdate || pubDate
-  return {
-    title,
-    description,
-    publishDate,
-    link,
-    categories,
-  }
-}
-
 router.post('/subscribe', tokenValidator, (req, res) => {
   const { mobile } = req.params
   const { source } = req.body
@@ -53,9 +33,10 @@ router.post('/subscribe', tokenValidator, (req, res) => {
       // 数据库是否有缓存
       const hasCache = !isEmpty(feedDocs)
       if (hasCache) {
+        const [feed] = feedDocs
         if (isNewSubscribeInfo) {
           const userSubscribe = new model.userSubscribe({ mobile, feeds: [ source ] })
-          userSubscribe.save().then(() => res.send({ [source]: feedDocs[0] }))
+          userSubscribe.save().then(() => res.send({ [source]: feed }))
         } else {
           const [userSubscribeInfo] = userSubscribeDocs
           const { feeds } = userSubscribeInfo
@@ -77,15 +58,47 @@ router.post('/subscribe', tokenValidator, (req, res) => {
           description,
           link,
         } = meta
+
+        const itemArray = items.map(item => {
+          const {
+            title,
+            description,
+            date,
+            pubdate,
+            pubDate,
+            link: url,
+            categories,
+          } = item
+          const publishDate = date || pubdate || pubDate
+          return {
+            url,
+            source,
+            link: `dudu://rss_detail?title=${title}&source=${source}&url=${url}`,
+            categories,
+            publishDate,
+            title,
+            description,
+          }
+        })
+
+        const itemOverviews = itemArray.map(item => {
+          return {
+            url: item.url,
+            title: item.title,
+            link: item.link,
+            source,
+          }
+        })
         const feed = {
           source,
           title,
           description,
-          link,
-          items: items.map(feedItemFormatter),
+          link: `dudu://rss_source?title=${title}&source=${source}`,
+          itemOverviews,
         }
         const result = { [source]: feed }
         if (!hasCache) {
+          // 更新user-feedSource collection
           if (isNewSubscribeInfo) {
             const userSubscribe = new model.userSubscribe({ mobile, feeds: [ source ] })
             userSubscribe.save().then(() => res.send({ result }))
@@ -101,8 +114,24 @@ router.post('/subscribe', tokenValidator, (req, res) => {
           }
         }
 
-        model.feed.findOneAndUpdate({ source }, feed, { upsert: true }).exec()
-
+        // 更新一下feed概览
+        model.feed
+        .findOneAndUpdate({ source }, feed, { upsert: true })
+        .then(() => {
+          // 更新一下feeditems
+          model.feedItem
+          .remove({ url: { $in: itemArray.map(item => item.url) } })
+          .then(() => {
+            model.feedItem
+            .insertMany(itemArray)
+            .then(() => {
+              // inserted items into feeditems collection
+            })
+            .catch(error => console.warn(error))
+          })
+          .catch(error => console.warn(error))
+        })
+        .catch(error => console.warn(error))
       })
       .catch(error => res.send({ error: '解析xml出错' }))
     })
@@ -139,7 +168,6 @@ router.delete('/unsubscribe', tokenValidator, (req, res) => {
 
 router.get('/getSubscribesByUser/:mobile', (req, res) => {
   const { mobile } = req.params
-  console.log(mobile)
   model.userSubscribe.find({ mobile })
   .then(userSubscribes => {
     let [userSubscribe] = userSubscribes
@@ -157,6 +185,23 @@ router.get('/getSubscribesByUser/:mobile', (req, res) => {
         res.send({ result })
       })
       .catch(error => res.send({ error }))
+    }
+  })
+  .catch(error => res.send({ error }))
+})
+
+router.get('/getFeedItem', (req, res) => {
+  const { url } = req.query
+  if (isEmpty(url)) {
+    return res.send({ error: '未找到指定文章' })
+  }
+  model.feedItem.find({ url })
+  .then(feedItems => {
+    const [feedItem] = feedItems
+    if (isEmpty(feedItem)) {
+      res.send({ error: '未找到指定文章' })
+    } else {
+      res.send({ result: feedItem })
     }
   })
   .catch(error => res.send({ error }))

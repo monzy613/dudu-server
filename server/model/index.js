@@ -32,8 +32,18 @@ const feedSchema = new Schema({
   source: String,
   title: String,
   description: String,
+  itemOverviews: Array,
   link: String,
-  items: Array
+})
+
+const feedItemSchema = new Schema({
+  url: String,
+  link: String,
+  source: String,
+  categories: Array,
+  publishDate: Date,
+  title: String,
+  description: String,
 })
 
 const userSubscribeSchema = new Schema({
@@ -46,5 +56,6 @@ export default {
   userSubscribe: mongoose.model('userSubscribe', userSubscribeSchema),
   token: mongoose.model('token', tokenSchema),
   feed: mongoose.model('feed', feedSchema),
+  feedItem: mongoose.model('feedItem', feedItemSchema),
   verify: mongoose.model('verify', verifySchema),
 }
