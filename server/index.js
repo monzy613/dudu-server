@@ -43,7 +43,7 @@ app.use(methodOverride())
 app.use(allowCrossDomain)
 for (let i in routes) {
   const item = routes[i]
-  app.use(item.key, item.route)
+  app.use(`/api${item.key}`, item.route)
 }
 
 app.listen(PORT, () => {
