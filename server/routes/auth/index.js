@@ -102,6 +102,7 @@ router.post('/register', (req, res) => {
     mobile,
     password,
     name,
+    avatar,
   } = req.body
 
   if (!validMobile(mobile)) {
@@ -122,6 +123,7 @@ router.post('/register', (req, res) => {
         pwdHash,
         salt,
         isDefaultAvatar: true,
+        avatar,
         name,
       }
 
@@ -193,7 +195,13 @@ router.post('/verify', (req, res) => {
             if (!isEmpty(docs)) {
               res.send({ error: '手机号已被注册' })
             } else {
-              const { pwdHash, salt, isDefaultAvatar, name } = verify.userInfo
+              const {
+                pwdHash,
+                salt,
+                isDefaultAvatar,
+                avatar,
+                name,
+              } = verify.userInfo
               const token = generateToken(mobile)
               const expireDate = new Date((new Date()).getTime() + tokenExpireSeconds)
               const user = new model.user({
@@ -201,7 +209,8 @@ router.post('/verify', (req, res) => {
                 pwdHash,
                 salt,
                 isDefaultAvatar,
-                name
+                name,
+                avatar,
               })
 
               user.save().then(user => {

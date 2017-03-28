@@ -5,7 +5,9 @@ const userSchema = new Schema({
   mobile: String,
   name: String,
   isDefaultAvatar: Boolean,
+  avatar: String,
   salt: String,
+  motto: String,
   pwdHash: String,
 })
 
@@ -17,6 +19,7 @@ const verifySchema = new Schema({
     mobile: String,
     name: String,
     isDefaultAvatar: Boolean,
+    avatar: String,
     salt: String,
     pwdHash: String,
   },
@@ -40,6 +43,7 @@ const feedItemSchema = new Schema({
   url: String,
   link: String,
   source: String,
+  sourceTitle: String,
   categories: Array,
   publishDate: Date,
   title: String,

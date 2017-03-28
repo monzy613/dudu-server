@@ -59,6 +59,8 @@ router.post('/subscribe', tokenValidator, (req, res) => {
           link,
         } = meta
 
+        const sourceTitle = title
+
         const itemArray = items.map(item => {
           const {
             title,
@@ -71,6 +73,7 @@ router.post('/subscribe', tokenValidator, (req, res) => {
           } = item
           const publishDate = date || pubdate || pubDate
           return {
+            sourceTitle,
             url,
             source,
             link: `dudu://rss_detail?title=${title}&source=${source}&url=${url}`,

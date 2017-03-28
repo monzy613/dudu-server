@@ -32,21 +32,64 @@ router.get('/', tokenValidator, (req, res) => {
       ]
 
       Promise.all(queries)
-        .then(queryResults => {
-          const [feeds, items, users] = queryResults
+      .then(queryResults => {
+        const [feeds, items, users] = queryResults
+
+        if (isEmpty(feeds)) {
           const result = []
-          feeds.map(feed => result.push({ type: SEARCH_TYPE_FEED, feed }))
           items.map(item => result.push({ type: SEARCH_TYPE_ITEM, item }))
           users.map(user => result.push({ type: SEARCH_TYPE_USER, user }))
           res.send({ result })
-        })
-        .catch(error => res.send({ error }))
-        break
-      }
+        } else {
+          // 结果里有feed
+          model.userSubscribe.find({ mobile })
+          .then(userSubscribes => {
+            const [userSubscribe] = userSubscribes
+
+            const result = []
+
+            feeds.map(feedDoc => {
+              const feed = feedDoc.toJSON()
+              if (isEmpty(userSubscribe)) {
+                feed.subscribed = false
+              } else {
+                feed.subscribed = userSubscribe.feeds.includes(feedDoc.source)
+              }
+              result.push({ type: SEARCH_TYPE_FEED, feed })
+            })
+            items.map(item => result.push({ type: SEARCH_TYPE_ITEM, item }))
+            users.map(user => result.push({ type: SEARCH_TYPE_USER, user }))
+            res.send({ result })
+          })
+          .catch(error => res.send({ error }))
+        }
+      })
+      .catch(error => res.send({ error }))
       break
+    }
     case SEARCH_TYPE_FEED: {
-      model.feed.find({ title: { '$regex': keyword } })
-      .then(feeds => res.send({ result: feeds.map(feed => ({ type: SEARCH_TYPE_FEED, feed })) }))
+      const queries = [
+        model.feed.find({ title: { '$regex': keyword } }),
+        model.userSubscribe.find({ mobile }),
+      ]
+
+      Promise.all(queries)
+      .then(queryItems => {
+        const [feeds, userSubscribes] = queryItems
+        const [userSubscribe] = userSubscribes
+
+        res.send({
+          result: feeds.map(feedDoc => {
+            const feed = feedDoc.toJSON()
+            if (isEmpty(userSubscribe)) {
+              feed.subscribed = false
+            } else {
+              feed.subscribed = userSubscribe.feeds.includes(feedDoc.source)
+            }
+            return { type: SEARCH_TYPE_FEED, feed }
+          })
+        })
+      })
       .catch(error => res.send({ error }))
       break
     }
