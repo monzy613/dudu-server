@@ -55,6 +55,36 @@ const userSubscribeSchema = new Schema({
   feeds: Array,
 })
 
+// timeline
+const timelineSchema = new Schema({
+  mobile: String,
+  content: String,
+  publishDate: Date,
+  referredItem: {
+    url: String,
+    title: String,
+    sourceTitle: String,
+  },
+  comments: Array, // <String> comment id
+  usersLiked: Array, // avatar, mobile, name
+})
+
+// 用户点赞的表
+const likeSchema = new Schema({
+  mobile: String, // primary
+  timelineIDs: Array, // <String> timeline id
+})
+
+// 评论表
+const commentSchema = new Schema({
+  timelineUserMobile: String,
+  mobile: String,
+  name: String,
+  timelineID: String,
+  content: String,
+  publishDate: Date,
+})
+
 export default {
   user: mongoose.model('user', userSchema),
   userSubscribe: mongoose.model('userSubscribe', userSubscribeSchema),
@@ -62,4 +92,9 @@ export default {
   feed: mongoose.model('feed', feedSchema),
   feedItem: mongoose.model('feedItem', feedItemSchema),
   verify: mongoose.model('verify', verifySchema),
+
+  // timeline
+  timeline: mongoose.model('timeline', timelineSchema),
+  like: mongoose.model('like', likeSchema),
+  comment: mongoose.model('comment', commentSchema),
 }

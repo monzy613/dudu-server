@@ -12,9 +12,17 @@ const formatedUserInfo = user => {
   const {
     mobile,
     isDefaultAvatar,
-    name
+    name,
+    avatar,
+    motto,
   } = user
-  return { mobile, isDefaultAvatar, name }
+  return {
+    mobile,
+    isDefaultAvatar,
+    name,
+    avatar,
+    motto,
+  }
 }
 
 const sms = ({ mobile, number, time }) => {
