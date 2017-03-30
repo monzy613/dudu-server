@@ -66,8 +66,6 @@ const timelineSchema = new Schema({
     title: String,
     sourceTitle: String,
   },
-  comments: Array, // <String> comment id
-  usersLiked: Array, // <String> like id
 })
 
 // 用户点赞的表

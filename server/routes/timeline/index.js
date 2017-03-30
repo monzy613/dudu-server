@@ -32,8 +32,6 @@ router.post('/postTimeline', tokenValidator, (req, res) => {
         type,
         publishDate: new Date(),
         referredItem: undefined,
-        comments: [],
-        usersLiked: [],
       })
 
       timeline.save()
@@ -61,8 +59,6 @@ router.post('/postTimeline', tokenValidator, (req, res) => {
               source,
               title: feed.title,
             },
-            comments: [],
-            usersLiked: [],
           })
           timeline.save()
           .then(() => res.send({ success: true }))
@@ -94,8 +90,6 @@ router.post('/postTimeline', tokenValidator, (req, res) => {
               title: feedItem.title,
               sourceTitle: feedItem.sourceTitle,
             },
-            comments: [],
-            usersLiked: [],
           })
           timeline.save()
           .then(() => res.send({ success: true }))
@@ -115,11 +109,15 @@ router.post('/like', tokenValidator, (req, res) => {
   const { mobile } = req.params
   const { timelineID } = req.body
 
-  const queries = [ model.like.find({ timelineID }), model.timeline.findById(timelineID) ]
+  const queries = [
+    model.like.find({ timelineID }),
+    model.timeline.findById(timelineID),
+    model.user.findOne({ mobile }),
+  ]
 
   Promise.all(queries)
   .then(queryItems => {
-    const [ likes, timeline ] = queryItems
+    const [ likes, timeline, user ] = queryItems
     if (isEmpty(timeline)) {
       res.send({ error: '未找到timeline' })
     } else {
@@ -128,11 +126,22 @@ router.post('/like', tokenValidator, (req, res) => {
         // 取消点赞
         model.like.findOneAndRemove({ timelineID, mobile })
         .then(() => {
-
+          res.send({ success: true })
         })
         .catch(error => res.send)
       } else {
         // 点赞
+        const like = new model.like({
+          authorMobile: timeline.mobile,
+          mobile,
+          avatar: user.avatar,
+          name: user.name,
+          timelineID,
+          publishDate: new Date()
+        })
+        like.save()
+        .then(() => res.send({ success: true }))
+        .catch(error => res.send({ error }))
       }
     }
   })
@@ -141,12 +150,46 @@ router.post('/like', tokenValidator, (req, res) => {
 
 // 评论某个timeline
 router.post('/comment', tokenValidator, (req, res) => {
-/**
- * {
-	"timelineID": "xxxx",
-	"content": "xxxx"
-}
- */
+  const { mobile } = req.params
+  const {
+    timelineID,
+    content,
+    replyMobile,
+  } = req.body
+
+  if (isEmpty(content)) {
+    return res.send({ error: '评论不可为空' })
+  }
+
+  const queries = [
+    model.timeline.findById(timelineID),
+    model.user.findOne({ mobile }),
+  ]
+  if (!isEmpty(replyMobile)) {
+    queries.push(model.user.findOne({ mobile: replyMobile }))
+  }
+  Promise.all(queries)
+  .then(queryItems => {
+    const [ timeline, user, replyUser = {} ] = queryItems
+    if (isEmpty(timeline)) {
+      res.send({ error: '未找到timeline' })
+    } else {
+      const comment = new model.comment({
+        authorMobile: timeline.mobile,
+        mobile,
+        name: user.name,
+        replyMobile: replyUser.mobile,
+        replyName: replyUser.name,
+        timelineID,
+        content,
+        publishDate: new Date(),
+      })
+      comment.save()
+      .then(() => res.send({ success: true }))
+      .catch(error => res.send({ error }))
+    }
+  })
+  .catch(error => res.send({ error }))
 })
 
 /**
@@ -178,6 +221,7 @@ router.get('/getTimelineByUser', tokenValidator, (req, res) => {
       const { timelineID } = comment
       const commentArray = commentMap[timelineID] || []
       commentArray.push(comment)
+      commentMap[timelineID] = commentArray
     })
 
     // like
@@ -186,14 +230,18 @@ router.get('/getTimelineByUser', tokenValidator, (req, res) => {
       const { timelineID } = like
       const likeArray = likeMap[timelineID] || []
       likeArray.push(like)
+      likeMap[timelineID] = likeArray
     })
 
     const result = timelines.map(raw => {
       const timeline = raw.toJSON()
       timeline.user = user
-      timeline.liked = timeline.usersLiked.map(user => user.mobile).includes(viewerMobile)
+
       timeline.comments = commentMap[timeline._id] || []
-      timeline.usersLiked = likeMap[timeline._id] || []
+
+      const likes = likeMap[timeline._id] || []
+      timeline.likes = likes
+      timeline.liked = likes.includes(viewerMobile)
       return timeline
     })
     res.send({ result })
