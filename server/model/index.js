@@ -67,20 +67,26 @@ const timelineSchema = new Schema({
     sourceTitle: String,
   },
   comments: Array, // <String> comment id
-  usersLiked: Array, // avatar, mobile, name
+  usersLiked: Array, // <String> like id
 })
 
 // 用户点赞的表
 const likeSchema = new Schema({
-  mobile: String, // primary
-  timelineIDs: Array, // <String> timeline id
+  authorMobile: String,
+  mobile: String,
+  avatar: String,
+  name: String,
+  timelineID: String,
+  publishDate: Date,
 })
 
 // 评论表
 const commentSchema = new Schema({
-  timelineUserMobile: String,
+  authorMobile: String,
   mobile: String,
   name: String,
+  replyMobile: String,
+  replyName: String,
   timelineID: String,
   content: String,
   publishDate: Date,

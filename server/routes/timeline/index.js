@@ -1,6 +1,7 @@
 import express from 'express'
 import isEmpty from 'lodash/isEmpty'
 
+import mongoose from 'mongoose'
 import db from '../../lib/db'
 import model from '../../model'
 import { tokenValidator } from '../../lib/routerMiddlewares'
@@ -111,12 +112,31 @@ router.post('/postTimeline', tokenValidator, (req, res) => {
 
 // 点赞/取消赞
 router.post('/like', tokenValidator, (req, res) => {
-/**
- * {
-	"timelineID": "xxxx",
-	"like": true,
-}
- */
+  const { mobile } = req.params
+  const { timelineID } = req.body
+
+  const queries = [ model.like.find({ timelineID }), model.timeline.findById(timelineID) ]
+
+  Promise.all(queries)
+  .then(queryItems => {
+    const [ likes, timeline ] = queryItems
+    if (isEmpty(timeline)) {
+      res.send({ error: '未找到timeline' })
+    } else {
+      const liked = likes.map(like => like.mobile).includes(mobile)
+      if (liked) {
+        // 取消点赞
+        model.like.findOneAndRemove({ timelineID, mobile })
+        .then(() => {
+
+        })
+        .catch(error => res.send)
+      } else {
+        // 点赞
+      }
+    }
+  })
+  .catch(error => res.send({ error }))
 })
 
 // 评论某个timeline
@@ -133,7 +153,7 @@ router.post('/comment', tokenValidator, (req, res) => {
  * 根据用户获取timeline
  */
 router.get('/getTimelineByUser', tokenValidator, (req, res) => {
-  const { fromMobile } = req.params
+  const { mobile: viewerMobile } = req.params
   const { mobile } = req.query
 
   if (isEmpty(mobile)) {
@@ -143,13 +163,16 @@ router.get('/getTimelineByUser', tokenValidator, (req, res) => {
   const queries = [
     model.user.find({ model }),
     model.timeline.find({ mobile }),
-    model.comment.find({ timelineUserMobile: mobile })
+    model.comment.find({ authorMobile: mobile }),
+    model.like.find({ authorMobile: mobile }),
   ]
 
   Promise.all(queries)
   .then(queryItems => {
-    const [users, timelines, comments] = queryItems
+    const [users, timelines, comments, likes] = queryItems
     const [user] = users
+
+    // comment
     const commentMap = {}
     comments.map(comment => {
       const { timelineID } = comment
@@ -157,11 +180,20 @@ router.get('/getTimelineByUser', tokenValidator, (req, res) => {
       commentArray.push(comment)
     })
 
+    // like
+    const likeMap = {}
+    likes.map(like => {
+      const { timelineID } = like
+      const likeArray = likeMap[timelineID] || []
+      likeArray.push(like)
+    })
+
     const result = timelines.map(raw => {
       const timeline = raw.toJSON()
       timeline.user = user
-      timeline.liked = timeline.usersLiked.map(user => user.mobile).includes(fromMobile)
+      timeline.liked = timeline.usersLiked.map(user => user.mobile).includes(viewerMobile)
       timeline.comments = commentMap[timeline._id] || []
+      timeline.usersLiked = likeMap[timeline._id] || []
       return timeline
     })
     res.send({ result })
