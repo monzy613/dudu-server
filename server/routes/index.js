@@ -4,6 +4,7 @@ import auth from './auth'
 import follow from './follow'
 import feed from './feed'
 import search from './search'
+import timeline from './timeline'
 
 const routeItem = routeDic => {
   const key = Object.keys(routeDic)[0]
@@ -16,4 +17,5 @@ export default [
   routeItem({ follow }),
   routeItem({ feed }),
   routeItem({ search }),
+  routeItem({ timeline }),
 ]

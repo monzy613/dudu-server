@@ -60,6 +60,7 @@ const timelineSchema = new Schema({
   mobile: String,
   content: String,
   publishDate: Date,
+  type: String,
   referredItem: {
     url: String,
     title: String,
