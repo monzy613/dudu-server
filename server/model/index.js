@@ -63,6 +63,7 @@ const timelineSchema = new Schema({
   type: String,
   referredItem: {
     url: String,
+    source: String,
     title: String,
     sourceTitle: String,
   },

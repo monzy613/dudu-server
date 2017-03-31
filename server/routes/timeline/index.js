@@ -195,7 +195,7 @@ router.post('/comment', tokenValidator, (req, res) => {
 /**
  * 根据用户获取timeline
  */
-router.get('/getTimelineByUser', tokenValidator, (req, res) => {
+router.get('/getByUser', tokenValidator, (req, res) => {
   const { mobile: viewerMobile } = req.params
   const { mobile } = req.query
 
@@ -204,7 +204,7 @@ router.get('/getTimelineByUser', tokenValidator, (req, res) => {
   }
 
   const queries = [
-    model.user.find({ model }),
+    model.user.findOne({ mobile }),
     model.timeline.find({ mobile }),
     model.comment.find({ authorMobile: mobile }),
     model.like.find({ authorMobile: mobile }),
@@ -212,8 +212,7 @@ router.get('/getTimelineByUser', tokenValidator, (req, res) => {
 
   Promise.all(queries)
   .then(queryItems => {
-    const [users, timelines, comments, likes] = queryItems
-    const [user] = users
+    const [user, timelines, comments, likes] = queryItems
 
     // comment
     const commentMap = {}
@@ -241,7 +240,7 @@ router.get('/getTimelineByUser', tokenValidator, (req, res) => {
 
       const likes = likeMap[timeline._id] || []
       timeline.likes = likes
-      timeline.liked = likes.includes(viewerMobile)
+      timeline.liked = likes.map(like => like.mobile).includes(viewerMobile)
       return timeline
     })
     res.send({ result })
