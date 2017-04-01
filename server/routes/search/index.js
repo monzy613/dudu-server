@@ -23,13 +23,13 @@ router.get('/', tokenValidator, (req, res) => {
     return res.send({ result: [] })
   }
 
+  const feedQuery = model.feed.find({ title: { '$regex': keyword } })
+  const itemQuery = model.feedItem.find({ title: { '$regex': keyword } })
+  const userQuery = model.user.find({ name: { '$regex': keyword }, mobile: { $ne: mobile } })
+
   switch (type) {
     case SEARCH_TYPE_DEFAULT: {
-      const queries = [
-        model.feed.find({ title: { '$regex': keyword } }),
-        model.feedItem.find({ title: { '$regex': keyword } }),
-        model.user.find({ name: { '$regex': keyword } })
-      ]
+      const queries = [ feedQuery, itemQuery, userQuery ]
 
       Promise.all(queries)
       .then(queryResults => {
@@ -69,7 +69,7 @@ router.get('/', tokenValidator, (req, res) => {
     }
     case SEARCH_TYPE_FEED: {
       const queries = [
-        model.feed.find({ title: { '$regex': keyword } }),
+        feedQuery,
         model.userSubscribe.find({ mobile }),
       ]
 
@@ -94,13 +94,13 @@ router.get('/', tokenValidator, (req, res) => {
       break
     }
     case SEARCH_TYPE_ITEM: {
-      model.feedItem.find({ title: { '$regex': keyword } })
+      itemQuery
       .then(feedItems => res.send({ result: feedItems.map(item => ({ type: SEARCH_TYPE_ITEM, item })) }))
       .catch(error => res.send({ error }))
       break
     }
     case SEARCH_TYPE_USER: {
-      model.user.find({ name: { '$regex': keyword } })
+      userQuery
       .then(users => res.send({ result: users.map(user => ({ type: SEARCH_TYPE_USER, user })) }))
       .catch(error => res.send({ error }))
       break
