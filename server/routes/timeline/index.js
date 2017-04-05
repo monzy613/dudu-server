@@ -5,6 +5,10 @@ import mongoose from 'mongoose'
 import db from '../../lib/db'
 import model from '../../model'
 import { tokenValidator } from '../../lib/routerMiddlewares'
+import {
+  itemDeeplink,
+  feedDeeplink,
+} from '../../lib/deeplink'
 
 const TIMELINE_TYPE_TEXT = 'text'
 const TIMELINE_TYPE_SOURCE = 'source'
@@ -241,6 +245,18 @@ router.get('/getByUser', tokenValidator, (req, res) => {
       const likes = likeMap[timeline._id] || []
       timeline.likes = likes
       timeline.liked = likes.map(like => like.mobile).includes(viewerMobile)
+      switch (timeline.type) {
+        case TIMELINE_TYPE_ITEM: {
+          timeline.link = itemDeeplink(timeline.referredItem)
+          break
+        }
+        case TIMELINE_TYPE_SOURCE: {
+          timeline.link = feedDeeplink(timeline.referredItem)
+          break
+        }
+        default:
+          break;
+      }
       return timeline
     })
     res.send({ result })

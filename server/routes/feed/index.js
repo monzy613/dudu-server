@@ -15,37 +15,34 @@ router.post('/subscribe', tokenValidator, (req, res) => {
   if (isEmpty(source)) {
     return res.send({ error: '需要feed source' })
   }
-  model.userSubscribe.find({ mobile })
-  .then(userSubscribeDocs => {
+  model.userSubscribe.findOne({ mobile })
+  .then(userSubscribeInfo => {
     let isNewSubscribeInfo = false
-    if (isEmpty(userSubscribeDocs)) {
+    if (isEmpty(userSubscribeInfo)) {
       isNewSubscribeInfo = true
     } else {
-      const [userSubscribeInfo] = userSubscribeDocs
       const { feeds } = userSubscribeInfo
       if (feeds.includes(source)) {
         return res.send({ error: '无法重复订阅' })
       }
     }
 
-    model.feed.find({ source })
-    .then(feedDocs => {
+    model.feed.findOne({ source })
+    .then(feed => {
       // 数据库是否有缓存
-      const hasCache = !isEmpty(feedDocs)
+      const hasCache = !isEmpty(feed)
       if (hasCache) {
-        const [feed] = feedDocs
         if (isNewSubscribeInfo) {
           const userSubscribe = new model.userSubscribe({ mobile, feeds: [ source ] })
-          userSubscribe.save().then(() => res.send({ [source]: feed }))
+          userSubscribe.save().then(() => res.send({ result: { [source]: feed } }))
         } else {
-          const [userSubscribeInfo] = userSubscribeDocs
           const { feeds } = userSubscribeInfo
           const newFeedsSet = new Set(feeds)
           newFeedsSet.add(source)
           const newFeeds = Array.from(newFeedsSet)
           model.userSubscribe.findOneAndUpdate({ mobile }, { feeds: newFeeds })
-          .then(() => res.send({ [source]: feedDocs[0] }))
-          .catch(error => res.send(error))
+          .then(() => res.send({ result: { [source]: feed } }))
+          .catch(error => res.send({ error }))
         }
       }
 
@@ -106,7 +103,6 @@ router.post('/subscribe', tokenValidator, (req, res) => {
             const userSubscribe = new model.userSubscribe({ mobile, feeds: [ source ] })
             userSubscribe.save().then(() => res.send({ result }))
           } else {
-            const [userSubscribeInfo] = userSubscribeDocs
             const { feeds } = userSubscribeInfo
             const newFeedsSet = new Set(feeds)
             newFeedsSet.add(source)
@@ -171,9 +167,8 @@ router.delete('/unsubscribe', tokenValidator, (req, res) => {
 
 router.get('/getSubscribesByUser/:mobile', (req, res) => {
   const { mobile } = req.params
-  model.userSubscribe.find({ mobile })
-  .then(userSubscribes => {
-    let [userSubscribe] = userSubscribes
+  model.userSubscribe.findOne({ mobile })
+  .then(userSubscribe => {
     const feedSources = (userSubscribe && userSubscribe.feeds) || []
     if (isEmpty(feedSources)) {
       res.send({ result: {} })
@@ -193,14 +188,16 @@ router.get('/getSubscribesByUser/:mobile', (req, res) => {
   .catch(error => res.send({ error }))
 })
 
+router.get('/getFeedOverviews', (req, res) => {
+})
+
 router.get('/getFeedItem', (req, res) => {
   const { url } = req.query
   if (isEmpty(url)) {
     return res.send({ error: '未找到指定文章' })
   }
-  model.feedItem.find({ url })
-  .then(feedItems => {
-    const [feedItem] = feedItems
+  model.feedItem.findOne({ url })
+  .then(feedItem => {
     if (isEmpty(feedItem)) {
       res.send({ error: '未找到指定文章' })
     } else {
