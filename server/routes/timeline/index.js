@@ -205,7 +205,7 @@ router.get('/getByUser', tokenValidator, (req, res) => {
 
   const queries = [
     model.user.findOne({ mobile }),
-    model.timeline.find({ mobile }),
+    model.timeline.find({ mobile }).sort([['publishDate', 'descending']]),
     model.comment.find({ authorMobile: mobile }),
     model.like.find({ authorMobile: mobile }),
   ]

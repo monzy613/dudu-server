@@ -245,4 +245,17 @@ router.post('/verify', (req, res) => {
   })
 })
 
+router.get('/getUser', (req, res) => {
+  const { mobile } = req.query
+  model.user.findOne({ mobile })
+  .then(user => {
+    if (isEmpty(user)) {
+      res.send({ error: '未找到该用户' })
+    } else {
+      res.send({ result: user })
+    }
+  })
+  .catch(error => res.send({ error: error.toString() }))
+})
+
 export default router
