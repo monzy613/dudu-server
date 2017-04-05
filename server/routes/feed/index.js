@@ -139,19 +139,18 @@ router.post('/subscribe', tokenValidator, (req, res) => {
   .catch(error => res.send({ error }))
 })
 
-router.delete('/unsubscribe', tokenValidator, (req, res) => {
+router.post('/unsubscribe', tokenValidator, (req, res) => {
   const { mobile } = req.params
   const { source } = req.body
   if (isEmpty(source)) {
     return res.send({ error: '需要feed source' })
   }
-  model.userSubscribe.find({ mobile })
-  .then(docs => {
-    if (isEmpty(docs)) {
+  model.userSubscribe.findOne({ mobile })
+  .then(userSubscribe => {
+    if (isEmpty(userSubscribe)) {
       res.send({ error: '你还没有任何订阅' })
     } else {
-      const [userSubscribeInfo] = docs
-      const { feeds } = userSubscribeInfo
+      const { feeds } = userSubscribe
       if (!feeds.includes(source)) {
         res.send({ error: `没有订阅${source}` })
       } else {
