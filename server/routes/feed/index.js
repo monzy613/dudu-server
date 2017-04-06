@@ -187,7 +187,20 @@ router.get('/getSubscribesByUser/:mobile', (req, res) => {
   .catch(error => res.send({ error }))
 })
 
-router.get('/getFeedOverviews', (req, res) => {
+router.get('/getFeedBySource', (req, res) => {
+  const { source } = req.query
+  if (isEmpty(source)) {
+    res.send({ error: '未找到指定订阅源' })
+  }
+  model.feed.findOne({ source })
+  .then(feed => {
+    if (isEmpty(feed)) {
+      res.send({ error: '未找到指定订阅源' })
+    } else {
+      res.send({ result: { [source]: feed } })
+    }
+  })
+  .catch(error => res.send({ error }))
 })
 
 router.get('/getFeedItem', (req, res) => {
