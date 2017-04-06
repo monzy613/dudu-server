@@ -21,6 +21,8 @@ const MAX_VERIFY_TIME = 600000 // 验证码十分钟有效
 const VERIFY_TYPE_REGISTER = 'register'
 const VERIFY_TYPE_PASSWORD = 'password'
 
+const DEFAULT_AVATAR = 'http://ojiryy947.bkt.clouddn.com/default_avatar.png'
+
 const isDebug = true
 
 const removeOutDatedVerifies = () => {
@@ -102,7 +104,7 @@ router.post('/register', (req, res) => {
     mobile,
     password,
     name = '',
-    avatar = '',
+    avatar = DEFAULT_AVATAR,
   } = req.body
 
   if (!validMobile(mobile)) {
@@ -199,7 +201,7 @@ router.post('/verify', (req, res) => {
                 pwdHash,
                 salt,
                 isDefaultAvatar,
-                avatar,
+                avatar = DEFAULT_AVATAR,
                 name,
               } = verify.userInfo
               const token = generateToken(mobile)
