@@ -69,6 +69,13 @@ const timelineSchema = new Schema({
   },
 })
 
+// follow
+
+const followSchema = new Schema({
+  follower: String,
+  following: String,
+})
+
 // 用户点赞的表
 const likeSchema = new Schema({
   authorMobile: String,
@@ -103,4 +110,7 @@ export default {
   timeline: mongoose.model('timeline', timelineSchema),
   like: mongoose.model('like', likeSchema),
   comment: mongoose.model('comment', commentSchema),
+
+  // follow
+  follow: mongoose.model('follow', followSchema),
 }

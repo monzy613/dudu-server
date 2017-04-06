@@ -181,10 +181,16 @@ router.get('/getSubscribesByUser/:mobile', (req, res) => {
         }
         res.send({ result })
       })
-      .catch(error => res.send({ error }))
+      .catch(error => {
+        console.warn(error)
+        res.send({ error })
+      })
     }
   })
-  .catch(error => res.send({ error }))
+  .catch(error => {
+    console.warn(error)
+    res.send({ error })
+  })
 })
 
 router.get('/getFeedBySource', (req, res) => {

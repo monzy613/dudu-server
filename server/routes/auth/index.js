@@ -43,11 +43,11 @@ router.post('/login', (req, res) => {
     password
   } = req.body
 
-  model.user.find({ mobile }).then(docs => {
-    if (isEmpty(docs)) {
+  model.user.findOne({ mobile })
+  .then(user => {
+    if (isEmpty(user)) {
       res.send({ error: `${mobile} 不存在` })
     } else {
-      const [user] = docs
       const {
         salt,
         pwdHash
@@ -101,8 +101,8 @@ router.post('/register', (req, res) => {
   const {
     mobile,
     password,
-    name,
-    avatar,
+    name = '',
+    avatar = '',
   } = req.body
 
   if (!validMobile(mobile)) {
@@ -110,7 +110,8 @@ router.post('/register', (req, res) => {
     return
   }
 
-  model.user.find({ mobile }).then(docs => {
+  model.user.find({ mobile })
+  .then(docs => {
     if (!isEmpty(docs)) {
       res.send({ error: '手机号已被注册' })
     } else {
@@ -179,20 +180,19 @@ router.post('/verify', (req, res) => {
     return
   }
 
-  model.verify.find({ mobile })
-  .then(docs => {
-    if (isEmpty(docs)) {
+  model.verify.findOne({ mobile })
+  .then(verify => {
+    if (isEmpty(verify)) {
       // empty
       res.send({ error: '验证码已过期' })
     } else {
-      const [verify] = docs
       if (verify.number === number) {
         // success
         if (type !== VERIFY_TYPE_PASSWORD) {
           // 注册
-          model.user.find({ mobile })
-          .then(docs => {
-            if (!isEmpty(docs)) {
+          model.user.findOne({ mobile })
+          .then(user => {
+            if (!isEmpty(user)) {
               res.send({ error: '手机号已被注册' })
             } else {
               const {
@@ -204,7 +204,7 @@ router.post('/verify', (req, res) => {
               } = verify.userInfo
               const token = generateToken(mobile)
               const expireDate = new Date((new Date()).getTime() + tokenExpireSeconds)
-              const user = new model.user({
+              const newUser = new model.user({
                 mobile,
                 pwdHash,
                 salt,
@@ -213,7 +213,7 @@ router.post('/verify', (req, res) => {
                 avatar,
               })
 
-              user.save().then(user => {
+              newUser.save().then(user => {
                 const result = {
                   user: formatedUserInfo(user),
                   token
@@ -247,15 +247,23 @@ router.post('/verify', (req, res) => {
 
 router.get('/getUser', (req, res) => {
   const { mobile } = req.query
-  model.user.findOne({ mobile })
-  .then(user => {
-    if (isEmpty(user)) {
-      res.send({ error: '未找到该用户' })
-    } else {
-      res.send({ result: user })
-    }
+  const queries = [
+    model.user.findOne({ mobile }),
+    model.follow.find({ follower: mobile }), //关注数
+    model.follow.find({ following: mobile }), //粉丝数
+  ]
+  Promise.all(queries)
+  .then(queryItems => {
+    const [ user, followings, followers ] = queryItems
+    const result = user.toJSON()
+    result.followingCount = followings.length
+    result.followerCount = followers.length
+    res.send({ result })
   })
-  .catch(error => res.send({ error: error.toString() }))
+  .catch(error => {
+    console.warn(error)
+    res.send({ error })
+  })
 })
 
 export default router
