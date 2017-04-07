@@ -109,6 +109,27 @@ router.post('/postTimeline', tokenValidator, (req, res) => {
   }
 })
 
+router.post('/deleteTimeline', tokenValidator, (req, res) => {
+  const { mobile } = req.params
+  const { timelineID } = req.body
+
+  model.timeline.findById(timelineID)
+  .then(timeline => {
+    if (isEmpty(timeline)) {
+      return res.send({ error: '未找到timeline' })
+    }
+    const { mobile: authorMobile } = timeline
+    if (authorMobile === mobile) {
+      model.timeline.findOneAndRemove({ _id: timelineID })
+      .then(() => res.send({ success: true }))
+      .catch(error => res.send({ error }))
+    } else {
+      res.send({ error: '非法操作：不能删除非自己的分享' })
+    }
+  })
+  .catch(error => res.send({ error }))
+})
+
 // 点赞/取消赞
 router.post('/like', tokenValidator, (req, res) => {
   const { mobile } = req.params
@@ -130,9 +151,7 @@ router.post('/like', tokenValidator, (req, res) => {
       if (liked) {
         // 取消点赞
         model.like.findOneAndRemove({ timelineID, mobile })
-        .then(() => {
-          res.send({ success: true })
-        })
+        .then(() => res.send({ success: true }))
         .catch(error => res.send)
       } else {
         // 点赞
