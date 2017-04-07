@@ -45,8 +45,15 @@ router.post('/login', (req, res) => {
     password
   } = req.body
 
-  model.user.findOne({ mobile })
-  .then(user => {
+  const queries = [
+    model.user.findOne({ mobile }),
+    model.follow.find({ follower: mobile }), //关注数
+    model.follow.find({ following: mobile }), //粉丝数
+  ]
+
+  Promise.all(queries)
+  .then(queryItems => {
+    const [ user, followings, followers ] = queryItems
     if (isEmpty(user)) {
       res.send({ error: `${mobile} 不存在` })
     } else {
@@ -64,7 +71,7 @@ router.post('/login', (req, res) => {
         .then(doc => {
           res.send({
             result: {
-              user: formatedUserInfo(user),
+              user: formatedUserInfo({ user, followings, followers }),
               token,
             }
           })
@@ -78,7 +85,8 @@ router.post('/login', (req, res) => {
         res.send({ error: '密码错误' })
       }
     }
-  }).catch(error => {
+  })
+  .catch(error => {
     res.send({ error })
   })
 })
@@ -192,8 +200,14 @@ router.post('/verify', (req, res) => {
         // success
         if (type !== VERIFY_TYPE_PASSWORD) {
           // 注册
-          model.user.findOne({ mobile })
-          .then(user => {
+          const queries = [
+            model.user.findOne({ mobile }),
+            model.follow.find({ follower: mobile }), //关注数
+            model.follow.find({ following: mobile }), //粉丝数
+          ]
+          Promise.all(queries)
+          .then(queryItems => {
+            const [ user, followings, followers ] = queryItems
             if (!isEmpty(user)) {
               res.send({ error: '手机号已被注册' })
             } else {
@@ -217,7 +231,7 @@ router.post('/verify', (req, res) => {
 
               newUser.save().then(user => {
                 const result = {
-                  user: formatedUserInfo(user),
+                  user: formatedUserInfo({ user, followings, followers }),
                   token
                 }
                 model.token.findOneAndUpdate({ mobile }, { token, expireDate }, { upsert: true })

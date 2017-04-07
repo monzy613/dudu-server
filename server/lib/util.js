@@ -8,7 +8,12 @@ const validMobile = mobile => {
   return re.test(mobile)
 }
 
-const formatedUserInfo = user => {
+const formatedUserInfo = ({
+  user,
+  followings = [],
+  followers = [],
+  following = false,
+}) => {
   const {
     mobile,
     isDefaultAvatar,
@@ -22,6 +27,9 @@ const formatedUserInfo = user => {
     name,
     avatar,
     motto,
+    following,
+    followings,
+    followers,
   }
 }
 

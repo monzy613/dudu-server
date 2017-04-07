@@ -1,10 +1,11 @@
 import express from 'express'
-import isEmpty from 'lodash/isEmpty'
+import { isEmpty, isFunction } from 'lodash'
 
 import mongoose from 'mongoose'
 import db from '../../lib/db'
 import model from '../../model'
 import { tokenValidator } from '../../lib/routerMiddlewares'
+import { formatedUserInfo } from '../../lib/util'
 import {
   itemDeeplink,
   feedDeeplink,
@@ -196,27 +197,29 @@ router.post('/comment', tokenValidator, (req, res) => {
   .catch(error => res.send({ error }))
 })
 
-/**
- * 根据用户获取timeline
- */
-router.get('/getByUser', tokenValidator, (req, res) => {
-  const { mobile: viewerMobile } = req.params
-  const { mobile } = req.query
-
-  if (isEmpty(mobile)) {
-    return res.send({ error: 'mobile should not be empty' })
+const queryTimelines = ({
+  viewerMobile,
+  mobile,
+  mobiles,
+  type,
+  successHandler,
+  errorHandler
+}) => {
+  const queryMobiles = isEmpty(mobiles) ? [mobile] : mobiles
+  if (isEmpty(queryMobiles)) {
+    return errorHandler('mobile should not be empty')
   }
 
   const queries = [
-    model.user.findOne({ mobile }),
-    model.timeline.find({ mobile }).sort([['publishDate', 'descending']]),
-    model.comment.find({ authorMobile: mobile }),
-    model.like.find({ authorMobile: mobile }),
+    model.user.find({ mobile: { $in: queryMobiles } }),
+    model.timeline.find({ mobile: { $in: queryMobiles } }).sort([['publishDate', 'descending']]),
+    model.comment.find({ authorMobile: { $in: queryMobiles } }),
+    model.like.find({ authorMobile: { $in: queryMobiles } }),
   ]
 
   Promise.all(queries)
   .then(queryItems => {
-    const [user, timelines, comments, likes] = queryItems
+    const [ users, timelines, comments, likes ] = queryItems
 
     // comment
     const commentMap = {}
@@ -238,7 +241,9 @@ router.get('/getByUser', tokenValidator, (req, res) => {
 
     const result = timelines.map(raw => {
       const timeline = raw.toJSON()
-      timeline.user = user
+      const userMobile = timeline.mobile
+      const [user] = users.filter(user => user.mobile === userMobile)
+      timeline.user = formatedUserInfo({ user })
 
       timeline.comments = commentMap[timeline._id] || []
 
@@ -259,9 +264,55 @@ router.get('/getByUser', tokenValidator, (req, res) => {
       }
       return timeline
     })
-    res.send({ result })
+    if (isFunction(successHandler)) {
+      successHandler(result)
+    }
   })
-  .catch(error => res.send({ error }))
+  .catch(error => {
+    if (isFunction(errorHandler)) {
+      errorHandler(error)
+    }
+  })
+}
+
+/**
+ * 根据用户关注的人获取timeline
+ */
+router.get('/getFollowingTimelines', tokenValidator, (req, res) => {
+  const { mobile: viewerMobile } = req.params
+
+  model.follow.find({ follower: viewerMobile })
+  .then(followingResult => {
+    const mobiles = followingResult.map(result => result.following)
+    mobiles.push(viewerMobile)
+    queryTimelines({
+      viewerMobile,
+      mobiles,
+      successHandler: result => res.send({ result }),
+      errorHandler: error => res.send({ error })
+    })
+  })
+  .catch(error => {
+    if (isFunction(errorHandler)) {
+      errorHandler(error)
+    }
+  })
+
+})
+
+/**
+ * 根据用户获取timeline
+ */
+router.get('/getByUser', tokenValidator, (req, res) => {
+  const { mobile: viewerMobile } = req.params
+  const { mobile } = req.query
+
+  queryTimelines({
+    viewerMobile,
+    mobile,
+    successHandler: result => res.send({ result }),
+    errorHandler: error => res.send({ error })
+  })
 })
 
 export default router

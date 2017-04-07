@@ -5,6 +5,7 @@ import isEmpty from 'lodash/isEmpty'
 import db from '../../lib/db'
 import model from '../../model'
 import { tokenValidator } from '../../lib/routerMiddlewares'
+import { formatedUserInfo } from '../../lib/util'
 
 const router = express.Router()
 
@@ -15,7 +16,17 @@ router.get('/getFollowing', (req, res) => {
     return res.send({ error: 'mobile不可为空' })
   }
   model.follow.find({ follower })
-  .then(result => res.send({ result }))
+  .then(result => {
+    const mobiles = result.map(follow => follow.following)
+    model.user.find({ mobile: { $in: mobiles } })
+    .then(rawUsers => {
+      res.send({ result: rawUsers.map(user => formatedUserInfo({ user, following: true })) })
+    })
+    .catch(error => {
+      console.warn(error)
+      res.send({ error })
+    })
+  })
   .catch(error => res.send({ error }))
 })
 
@@ -25,8 +36,24 @@ router.get('/getFollower', (req, res) => {
   if (isEmpty(following)) {
     return res.send({ error: 'mobile不可为空' })
   }
-  model.follow.find({ following })
-  .then(result => res.send({ result }))
+  const queries = [
+    model.follow.find({ following }), //查找粉丝
+    model.follow.find({ follower: following }), //查找mobile关注的人
+  ]
+  Promise.all(queries)
+  .then(queryItems => {
+    const [ followerResult, followingResult ] = queryItems
+    const followerMobiles = followerResult.map(follow => follow.follower)
+    const followingMobiles = followingResult.map(follow => follow.following)
+    model.user.find({ mobile: { $in: followerMobiles } })
+    .then(rawUsers => {
+      res.send({ result: rawUsers.map(user => formatedUserInfo({ user, following: followingMobiles.includes(user.mobile) })) })
+    })
+    .catch(error => {
+      console.warn(error)
+      res.send({ error })
+    })
+  })
   .catch(error => res.send({ error }))
 })
 
