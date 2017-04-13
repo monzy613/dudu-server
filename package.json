@@ -23,6 +23,7 @@
     "mongoose": "^4.7.6",
     "morgan": "^1.7.0",
     "node-alidayu-sms": "^1.0.1",
+    "qiniu": "^6.1.13",
     "react": "^15.4.1",
     "react-dom": "^15.4.1",
     "utility": "^1.9.0"

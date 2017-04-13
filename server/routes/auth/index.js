@@ -10,9 +10,11 @@ import {
   sms,
   randomCode,
   generateToken,
+  avatarUploadInfo,
 } from '../../lib/util'
 import db from '../../lib/db'
 import model from '../../model'
+import { tokenValidator } from '../../lib/routerMiddlewares'
 
 const router = express.Router()
 
@@ -280,6 +282,12 @@ router.get('/getUser', (req, res) => {
     console.warn(error)
     res.send({ error })
   })
+})
+
+router.get('/getAvatarUploadInfo', tokenValidator, (req, res) => {
+  const { mobile } = req.params
+  const result = avatarUploadInfo(mobile)
+  res.send({ result })
 })
 
 export default router

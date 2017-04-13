@@ -2,6 +2,12 @@ import alidayuSMS from 'node-alidayu-sms'
 import { alidayuCfg } from '../config'
 import utils from 'utility'
 import rand from 'csprng'
+import qiniu from 'qiniu'
+
+import { qiniuCfg } from '../config'
+
+qiniu.conf.ACCESS_KEY = qiniuCfg.accessKey
+qiniu.conf.SECRET_KEY = qiniuCfg.secretKey
 
 const validMobile = mobile => {
   const re = /^(1(3|4|5|7|8))\d{9}$/
@@ -62,10 +68,26 @@ const generateToken = mobile => {
   return `${accountPart}.${randomPart}`
 }
 
+const avatarUploadInfo = mobile => {
+  const dateString = ((new Date()).getTime()).toString()
+
+  const mobilePart = utils.sha1(mobile, 'base64')
+  const datePart = utils.sha1(dateString, 'base64')
+  const randomPart = rand(80, 36)
+
+  const key = `${randomPart}${mobilePart}${datePart}`
+  const putPolicy = new qiniu.rs.PutPolicy(`${qiniuCfg.bucket}:${key}`)
+  return {
+    token: putPolicy.token(),
+    key,
+  }
+}
+
 export {
   validMobile,
   formatedUserInfo,
   sms,
   randomCode,
   generateToken,
+  avatarUploadInfo,
 }
