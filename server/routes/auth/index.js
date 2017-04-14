@@ -15,6 +15,7 @@ import {
 import db from '../../lib/db'
 import model from '../../model'
 import { tokenValidator } from '../../lib/routerMiddlewares'
+import { qiniuCfg } from '../../config'
 
 const router = express.Router()
 
@@ -288,6 +289,22 @@ router.get('/getAvatarUploadInfo', tokenValidator, (req, res) => {
   const { mobile } = req.params
   const result = avatarUploadInfo(mobile)
   res.send({ result })
+})
+
+router.post('/changeAvatar', tokenValidator, (req, res) => {
+  const { mobile } = req.params
+  const { key } = req.body
+  if (isEmpty(key)) {
+    return res.send({ error: 'key not valid' })
+  }
+
+  const avatar = `${qiniuCfg.host}/${key}`
+  model.user.findOneAndUpdate({ mobile }, { avatar })
+  .then(() => res.send({ success: true }))
+  .catch(error => {
+    console.warn(error)
+    res.send({ error })
+  })
 })
 
 export default router
