@@ -298,7 +298,10 @@ router.post('/changeAvatar', tokenValidator, (req, res) => {
     return res.send({ error: 'key not valid' })
   }
 
-  const avatar = `${qiniuCfg.host}/${key}`
+  let avatar = `${qiniuCfg.host}/${key}`
+  if (!qiniuCfg.host.startsWith('http://') && !qiniuCfg.host.startsWith('https://')) {
+    avatar = `http://${avatar}`
+  }
   model.user.findOneAndUpdate({ mobile }, { avatar })
   .then(() => res.send({ success: true }))
   .catch(error => {
