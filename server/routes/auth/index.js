@@ -274,7 +274,7 @@ router.get('/getUser', (req, res) => {
   Promise.all(queries)
   .then(queryItems => {
     const [ user, followings, followers ] = queryItems
-    const result = user.toJSON()
+    const result = formatedUserInfo({ user })
     result.followingCount = followings.length
     result.followerCount = followers.length
     res.send({ result })
