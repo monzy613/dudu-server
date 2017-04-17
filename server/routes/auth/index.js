@@ -303,7 +303,34 @@ router.post('/changeAvatar', tokenValidator, (req, res) => {
     avatar = `http://${avatar}`
   }
   model.user.findOneAndUpdate({ mobile }, { avatar })
-  .then(() => res.send({ success: true }))
+  .then(user => res.send({ result: formatedUserInfo({ user }) }))
+  .catch(error => {
+    console.warn(error)
+    res.send({ error })
+  })
+})
+
+router.post('/changeName', tokenValidator, (req, res) => {
+  const { mobile } = req.params
+  const { name } = req.body
+  const newName = name && name.trim()
+  if (isEmpty(newName)) {
+    return res.send({ error: '姓名不可为空' })
+  }
+  model.user.findOneAndUpdate({ mobile }, { name: newName })
+  .then(user => res.send({ result: formatedUserInfo({ user }) }))
+  .catch(error => {
+    console.warn(error)
+    res.send({ error })
+  })
+})
+
+router.post('/changeMotto', tokenValidator, (req, res) => {
+  const { mobile } = req.params
+  const { motto } = req.body
+
+  model.user.findOneAndUpdate({ mobile }, { motto })
+  .then(user => res.send({ result: formatedUserInfo({ user }) }))
   .catch(error => {
     console.warn(error)
     res.send({ error })
