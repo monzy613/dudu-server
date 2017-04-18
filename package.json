@@ -29,7 +29,9 @@
     "utility": "^1.9.0"
   },
   "scripts": {
-    "start": "babel-watch server",
+    "start": "babel-watch server debug",
+    "debug": "babel-watch server debug",
+    "release": "babel-watch server release",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"

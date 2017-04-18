@@ -26,7 +26,7 @@ const VERIFY_TYPE_PASSWORD = 'password'
 
 const DEFAULT_AVATAR = 'http://ojiryy947.bkt.clouddn.com/default_avatar.png'
 
-const isDebug = true
+const isDebug = (process.argv[2] === 'debug')
 
 const removeOutDatedVerifies = () => {
   console.log('Clearing outdated verifies')
