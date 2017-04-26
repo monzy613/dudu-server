@@ -98,19 +98,25 @@ const commentSchema = new Schema({
   publishDate: Date,
 })
 
+const itemCommentSchema = new Schema({
+  mobile: String,
+	url: String,
+  content: String,
+  publishDate: Date,
+})
+
 export default {
   user: mongoose.model('user', userSchema),
   userSubscribe: mongoose.model('userSubscribe', userSubscribeSchema),
   token: mongoose.model('token', tokenSchema),
   feed: mongoose.model('feed', feedSchema),
   feedItem: mongoose.model('feedItem', feedItemSchema),
+  itemComment: mongoose.model('itemComment', itemCommentSchema),
   verify: mongoose.model('verify', verifySchema),
-
   // timeline
   timeline: mongoose.model('timeline', timelineSchema),
   like: mongoose.model('like', likeSchema),
   comment: mongoose.model('comment', commentSchema),
-
   // follow
   follow: mongoose.model('follow', followSchema),
 }

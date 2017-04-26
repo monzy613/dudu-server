@@ -5,6 +5,7 @@ import isEmpty from 'lodash/isEmpty'
 
 import db from '../../lib/db'
 import { tokenValidator } from '../../lib/routerMiddlewares'
+import { formatedUserInfo } from '../../lib/util'
 import model from '../../model'
 
 const router = express.Router()
@@ -223,6 +224,94 @@ router.get('/getFeedItem', (req, res) => {
     }
   })
   .catch(error => res.send({ error }))
+})
+
+router.get('/getComments', (req, res) => {
+  const { url } = req.query
+  if (isEmpty(url)) {
+    return res.send({ error: '文章url为空' })
+  }
+  model.itemComment.find({ url })
+  .then(itemComments => {
+    if (isEmpty(itemComments)) {
+      return res.send({ result: [] })
+    }
+    const mobiles = itemComments.map(itemComment => itemComment.mobile)
+    model.user.find({ mobile: { $in: mobiles } })
+    .then(users => {
+      const userMap = {}
+      for (let i = 0; i < users.length; i++) {
+        const user = users[i]
+        const { mobile: userMobile } = user
+        userMap[userMobile] = formatedUserInfo({ user })
+      }
+      const result = itemComments.map(itemComment => {
+        return {
+          user: userMap[itemComment.mobile],
+          url: itemComment.url,
+          content: itemComment.content,
+          publishDate: itemComment.publishDate,
+        }
+      })
+      res.send({ result })
+    })
+    .catch(error => {
+      console.warn(error)
+      res.send({ error })
+    })
+  })
+  .catch(error => {
+    console.warn(error)
+    res.send({ error })
+  })
+})
+
+router.post('/comment', tokenValidator, (req, res) => {
+  const { mobile } = req.params
+  const {
+    url,
+    content,
+  } = req.body
+  if (isEmpty(content)) {
+    return res.send({ error: '评论不可为空' })
+  }
+  const queries = [
+    model.feedItem.findOne({ url }),
+    model.user.findOne({ mobile })
+  ]
+
+  Promise.all(queries)
+  .then(queryItems => {
+    const [ feedItem, user ] = queryItems
+    if (isEmpty(feedItem)) {
+      res.send({ error: '未找到文章, 评论失败' })
+    } else {
+      const publishDate = new Date()
+      const itemComment = new model.itemComment({
+        mobile,
+        url,
+        content,
+        publishDate,
+      })
+      itemComment.save()
+      .then(() => res.send({
+        result: {
+          user: formatedUserInfo({ user }),
+          url,
+          content,
+          publishDate,
+        }
+      }))
+      .catch(error => {
+        console.warn(error)
+        res.send({ error })
+      })
+    }
+  })
+  .catch(error => {
+    console.warn(error)
+    res.send({ error })
+  })
 })
 
 export default router
