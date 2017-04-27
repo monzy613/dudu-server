@@ -38,6 +38,4 @@ npm run release
 ```
 
 ## Api (待完善)
-```
-http://docs.dudu5.apiary.io/
-```
+> http://docs.dudu5.apiary.io/
