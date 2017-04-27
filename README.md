@@ -1,6 +1,5 @@
 # 读读 server端
-> 读读 客户端的后台服务器, 读读 客户端: https://github.com/monzy613/dudu-client
-> nodejs+express+mongodb
+> 读读 客户端的后台服务器, 使用nodejs+express+mongodb, 读读 客户端: https://github.com/monzy613/dudu-client
 
 ## Requirements
 1. mongodb
