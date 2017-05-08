@@ -7,6 +7,9 @@
     "babel-preset-es2015": "^6.18.0",
     "babel-preset-stage-3": "^6.22.0",
     "babel-watch": "^2.0.5",
+    "chai": "^3.5.0",
+    "chai-http": "^3.0.0",
+    "mocha": "^3.3.0",
     "react-scripts": "0.8.4"
   },
   "dependencies": {
@@ -33,7 +36,7 @@
     "debug": "babel-watch server debug",
     "release": "babel-watch server release",
     "build": "react-scripts build",
-    "test": "react-scripts test --env=jsdom",
+    "test": "mocha --timeout 10000 --compilers js:babel-core/register",
     "eject": "react-scripts eject"
   }
 }

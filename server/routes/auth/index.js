@@ -274,6 +274,9 @@ router.get('/getUser', (req, res) => {
   Promise.all(queries)
   .then(queryItems => {
     const [ user, followings, followers ] = queryItems
+    if (isEmpty(user)) {
+      return res.send({ error: '未找到用户' })
+    }
     const result = formatedUserInfo({ user })
     result.followingCount = followings.length
     result.followerCount = followers.length

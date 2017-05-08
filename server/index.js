@@ -49,3 +49,6 @@ for (let i in routes) {
 app.listen(PORT, () => {
   console.log(`Server listening on port: ${PORT}`)
 })
+
+// for testing
+export default app
